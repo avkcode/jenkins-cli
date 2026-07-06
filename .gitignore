@@ -1,0 +1,8 @@
+# jc binary
+/jc
+/dist
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

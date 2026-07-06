@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Set version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_clean=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+          LDFLAGS="-s -w \
+            -X 'github.com/avkcode/jenkins-cli/cmd.Version=${{ steps.version.outputs.version_clean }}' \
+            -X 'github.com/avkcode/jenkins-cli/cmd.Commit=$(git rev-parse --short HEAD)' \
+            -X 'github.com/avkcode/jenkins-cli/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+
+          for pair in "linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64"; do
+            GOOS=${pair%/*}
+            GOARCH=${pair#*/}
+            OUT="dist/jc-${GOOS}-${GOARCH}"
+            env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 \
+              go build -trimpath -ldflags="$LDFLAGS" -o "$OUT" .
+            echo "Built: $OUT ($(du -h "$OUT" | cut -f1))"
+          done
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum jc-* > checksums.txt
+          cat checksums.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## jc v${{ steps.version.outputs.version }}
+
+            Jenkins CLI — 75+ commands, MCP server for AI agents.
+
+            ### Installation
+            ```bash
+            # Linux amd64
+            curl -fsSL https://github.com/avkcode/jenkins-cli/releases/download/v${{ steps.version.outputs.version }}/jc-linux-amd64 -o jc
+            chmod +x jc && sudo mv jc /usr/local/bin/
+
+            # macOS amd64 / arm64
+            curl -fsSL https://github.com/avkcode/jenkins-cli/releases/download/v${{ steps.version.outputs.version }}/jc-darwin-arm64 -o jc
+            chmod +x jc && sudo mv jc /usr/local/bin/
+
+            # One-liner
+            curl -fsSL https://raw.githubusercontent.com/avkcode/jenkins-cli/main/scripts/install.sh | bash
+            ```
+
+            ### Verify
+            ```bash
+            sha256sum -c checksums.txt
+            jc --version
+            ```
+          files: |
+            dist/jc-*
+            dist/checksums.txt
+          generate_release_notes: true
+          token: ${{ github.token }}
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/avkcode/jenkins-cli:latest
+            ghcr.io/avkcode/jenkins-cli:v${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=jc
+            org.opencontainers.image.description=Jenkins CLI with MCP server
+            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+            org.opencontainers.image.source=https://github.com/avkcode/jenkins-cli
