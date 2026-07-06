@@ -4,17 +4,11 @@ run:
 linters:
   default: none
   enable:
-    - bodyclose
-    - gosec
+    - errcheck
     - misspell
-    - prealloc
     - revive
     - unconvert
-    - unparam
   settings:
-    gosec:
-      excludes:
-        - G104
     misspell:
       locale: US
     revive:

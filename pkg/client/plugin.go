@@ -86,7 +86,7 @@ func (jc *JenkinsClient) refreshUpdateCenter(ctx context.Context, base string) {
 }
 
 // waitForPluginInstall polls until the plugin is installed, an update-center job
-// reports a failure for it, or the context is cancelled.
+// reports a failure for it, or the context is canceled.
 func (jc *JenkinsClient) waitForPluginInstall(ctx context.Context, base, id string) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()

@@ -61,7 +61,7 @@ shell command on failure, and --interval to control polling frequency.`,
 		for {
 			select {
 			case <-sigCh:
-				fmt.Fprintln(os.Stderr, "\nWatch cancelled.")
+				fmt.Fprintln(os.Stderr, "\nWatch canceled.")
 				return nil
 			case <-ctx.Done():
 				return ctx.Err()

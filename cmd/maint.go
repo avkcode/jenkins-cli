@@ -39,7 +39,7 @@ var maintCancelQuietDownCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Fprintln(os.Stderr, "Cancelling Quiet Down mode...")
+		fmt.Fprintln(os.Stderr, "Canceling Quiet Down mode...")
 		_, err = client.Client.Requester.Post(ctx, "/cancelQuietDown", nil, nil, nil)
 		return err
 	},

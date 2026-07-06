@@ -71,7 +71,7 @@ var queueCancelCmd = &cobra.Command{
 		}
 
 		id := args[0]
-		fmt.Fprintf(os.Stderr, "Cancelling queue item %s...\n", id)
+		fmt.Fprintf(os.Stderr, "Canceling queue item %s...\n", id)
 		if err := client.CancelQueueItem(id); err != nil {
 			return err
 		}

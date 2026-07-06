@@ -526,7 +526,7 @@ func registerMCPTools(s *mcp.Server) {
 				return nil, err
 			}
 			audit("mcp.cancel_queue_item", fmt.Sprintf("%d", id))
-			return map[string]any{"cancelled": id}, nil
+			return map[string]any{"canceled": id}, nil
 		},
 	})
 
