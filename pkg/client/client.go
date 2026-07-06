@@ -325,35 +325,6 @@ func trimHTTPErrorBody(body []byte) string {
 	return text[:limit] + "...[truncated]"
 }
 
-func (jc *JenkinsClient) writeConsoleSnapshot(jobName string, buildNumber int64, out io.Writer) error {
-	httpClient := &http.Client{}
-	reqURL := fmt.Sprintf("%s/job/%s/%d/logText/progressiveText?start=0", jc.Client.Server, url.PathEscape(jobName), buildNumber)
-	req, err := http.NewRequestWithContext(jc.ctx, "GET", reqURL, nil)
-	if err != nil {
-		return err
-	}
-	if jc.username != "" {
-		req.SetBasicAuth(jc.username, jc.password)
-	}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to get Jenkins console snapshot: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read Jenkins console snapshot: %w", err)
-	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("jenkins returned error %d while reading console snapshot: %s", resp.StatusCode, trimHTTPErrorBody(body))
-	}
-	if len(body) == 0 {
-		return nil
-	}
-	_, err = out.Write(body)
-	return err
-}
-
 type consoleLogStream struct {
 	out         io.Writer
 	rawPending  []byte
